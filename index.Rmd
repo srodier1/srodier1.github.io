@@ -460,8 +460,4 @@ As far as cancer deaths go, apple production, although having the largest estima
 
 
 In conclusion, I don't know enough about statistics to really shake a stick at anything. 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

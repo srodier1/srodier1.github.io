@@ -15,6 +15,7 @@ library(janitor)
 library(plotly)
 library(patchwork)
 library(broom.mixed)
+library(lme4)
 options(scipen = 999)
 df <- read.csv("merged_data.csv")
 
@@ -34,7 +35,7 @@ df <- read.csv("merged_data.csv")
   Fruit consumed kgs/capita/year, kilograms of apples produced per capita per year,calories from plant protein, calories from animal protein, or calories from fat.
   
   What does keep the doctor away mean? 
-  For our study it can mean Disability Adjusted Life Years (DALYS), cancer prevalence, or life expectancy.
+  For our study it can mean cancer prevalence or life expectancy.
   
 
 It's important to remember that although these groups of variables will be treated as independant and dependant variables respectively, in reality, they are neither. They are simply observations in the crazy, complex interdependant web of life. 
@@ -73,7 +74,8 @@ df2 %>%
   geom_point()+
   geom_smooth() +
   ylab("Life Expectancy (normalized)")+
-  xlab("GDP per Capita (by year)")
+  xlab("GDP per Capita (by year)")+
+  ggtitle("GDP per Capita and Life Expectancy")
 
 mod <- glm(life_expectancy ~ gdp_capita_year, data = df2)
 
@@ -130,12 +132,13 @@ sum <- sum %>%
 print(sum)
 
 sum %>% 
-  ggplot(aes(x = term, y = estimate)) +
+  ggplot(aes(x = term, y = estimate, fill = term)) +
   geom_col()+
   theme(axis.text.x = element_text(angle = 60,
         vjust = 1, hjust = 1))+
   xlab("Variable")+
-  ylab("Influence on Variation in Life Expectancy")+
+  ylab("Estimate")+
+  ggtitle("Influence on Variation in Life Expectancy")+
   scale_x_discrete(labels = c("Calories from Animal Protein", "Calories from Carbohydrates", 
                               "Calories from Fat", "Calories from Plant Protein", 
                               "Fruit consumed (kg/Per Capita)", "GDP per Capita",
@@ -162,7 +165,8 @@ df2 %>%
   geom_point()+
   geom_smooth()+
   ylab("Life Expectancy (normalized)")+
-  xlab("Kilograms of Apples Produced (per capita)")
+  xlab("Kilograms of Apples Produced (per capita)")+
+  ggtitle("Apple Production and Life Expectancy")
 
 
 ```
@@ -193,7 +197,8 @@ df %>%
      ggplot(aes(x = kg_apple_prod_capita_year, y = pred)) +
      geom_smooth()+
   ylab("Likelyhood of Reaching Average Life Expectancy")+
-  xlab("Kilograms of Apples Produced per Capita")
+  xlab("Kilograms of Apples Produced per Capita")+
+  ggtitle("Predicting Power of Apple Production on Reaching Average Life Expectancy")
 
 ```
 
@@ -216,7 +221,7 @@ df <- df %>%
                             gdp_capita_year < 76516.18~ "medium",
                             TRUE ~ "rich"))
 df %>% 
-  ggplot(aes(x = wealth, y = kg_apple_prod_capita_year))+
+  ggplot(aes(x = wealth, y = kg_apple_prod_capita_year, fill = wealth))+
   geom_col()
 
 df %>%
@@ -224,7 +229,8 @@ df %>%
      ggplot(aes(x = kg_apple_prod_capita_year, y = pred, color = wealth)) +
      geom_smooth()+
   ylab("Likelyhood of Reaching Average Life Expectancy")+
-  xlab("Kilograms of Apples Produced per Capita")
+  xlab("Kilograms of Apples Produced per Capita")+
+  ggtitle("Predicting Power of Apple Production on Reaching Average Life Expectancy")
 
   
 ```
@@ -269,7 +275,7 @@ df3 <- df3 %>%
   mutate("phd_awards_pc" = phd_awards/total_pop)
 
 df3 %>% 
-  ggplot(aes(x = reorder(entity, -phd_awards), y = phd_awards))+
+  ggplot(aes(x = reorder(entity, -phd_awards), y = phd_awards, fill = entity))+
   geom_col()+
   theme(axis.text.x = element_text(angle =45 ,
                                    vjust = 1, hjust = 1))+
@@ -277,7 +283,8 @@ df3 %>%
   xlab("Country")+
   scale_x_discrete(labels = c("United States", "Germany", "United Kingdom", "India", "Japan", "France", 
                                 "South Korea", "Spain", "Italy", "Australia", "Canada", "Turkey", "Indonesia",
-                                "Russia", "South Africa"))
+                                "Russia", "South Africa"))+
+  ggtitle("Top 15 highest PHD awards by Country")
 
 ```
 
@@ -309,7 +316,7 @@ g2 <- df3 %>%
   xlab("PHD Awards")
 
 
-g1+g2
+g1+ggtitle("PHD Awards and Apple Production")+g2+(ggtitle("Connectivity Measure of PHD awards and Life Expectancy"))
 mod10 <- glm(phd_awards ~ life_expectancy, data = df3)
 phd_le <- tidy(mod10)
 
@@ -324,42 +331,54 @@ Its a hard NO, guys. From our tiny data set, it seems that production of apples 
 
 Again our assumptions were that the years 2013 and 2014 were not statistically significantly different and that the countries from our sample data are equivalent, neither assumption can be considered true. 
 
-Let's measure our independent variables against cancer deaths. 
+Let's turn our attention to the cancer doctor. Will an apple a day keep the oncologist away? Let's measure our independent variables against cancer deaths. Starting by learning what your chances of dying from cancer look like across continents.
+
+
+```{r}
+df <- df %>% 
+  mutate("cancer_deaths_pc" = deaths_neoplasms/total_pop)
+
+
+df %>% 
+  ggplot(aes(x = continent, y = cancer_deaths_pc, fill = continent))+
+  geom_bar(stat = "summary", fun = "mean")+
+  ylab("Chances of Dying from Cancer")+
+  xlab("Continent")+
+  ggtitle("Average Cancer Deaths per Capita by Continent")
+```
+
+
+According to this data, you have the highest chances of dying from cancer if you live in Europe. Let's see if any of our variables have an impact on chances of dying from cancer:
+
 
 
 ```{r}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, error = FALSE, warning = FALSE)
 
 
-df2 %>% 
-  select(entity, deaths_neoplasms) %>% 
-  group_by(entity) %>% 
-  summary(deaths_neoplasms)
-
-names(df2)
 #apples are mod2
-mod2 <- glm(deaths_neoplasms ~ kg_apple_prod_capita_year,
-             data = df2)
+mod2 <- glm(cancer_deaths_pc ~ kg_apple_prod_capita_year,
+             data = df)
 apl_canc <- tidy(mod2)
 #cal from animal protein is mod3
-mod3 <-  glm(deaths_neoplasms ~ cal_frm_animl_prot,
-             data = df2)
+mod3 <-  glm(cancer_deaths_pc ~ cal_frm_animl_prot,
+             data = df)
 animl_canc <- tidy(mod3)
 #cal from plant protein is mod4
-mod4 <-  glm(deaths_neoplasms ~ cal_frm_plnt_prot,
-             data = df2)
+mod4 <-  glm(cancer_deaths_pc ~ cal_frm_plnt_prot,
+             data = df)
 plnt_canc <- tidy(mod4)
 #cal from fat is mod5
-mod5 <-  glm(deaths_neoplasms ~ cal_frm_fat,
-             data = df2)
+mod5 <-  glm(cancer_deaths_pc ~ cal_frm_fat,
+             data = df)
 fat_canc <- tidy(mod5)
 #cal from carbs is mod6
-mod6 <-  glm(deaths_neoplasms ~ cal_frm_carbs,
-             data = df2)
+mod6 <-  glm(cancer_deaths_pc ~ cal_frm_carbs,
+             data = df)
 carbs_canc <- tidy(mod6)
 #fruit consumed per capita is mod7
-mod7 <-  glm(deaths_neoplasms ~ fruit_consumed_kg_pc_year,
-             data = df2)
+mod7 <-  glm(cancer_deaths_pc ~ fruit_consumed_kg_pc_year,
+             data = df)
 fruit_canc <- tidy(mod7)
 
 #full join
@@ -378,31 +397,66 @@ sum <- sum %>%
 print(sum)
 
 sum %>% 
-  ggplot(aes(x = term, y = estimate)) +
+  ggplot(aes(x = term, y = estimate, fill = term)) +
   geom_col()+
   theme(axis.text.x = element_text(angle = 60,
         vjust = 1, hjust = 1))+
   xlab("Variable")+
-  ylab("Influence on Variation in Cancer Deaths")#+
- # scale_x_discrete(labels = c("Calories from Animal Protein", "Calories from Carbohydrates", 
-                            #  "Calories from Fat", "Calories from Plant Protein", 
-                              #"Fruit consumed (kg/Per Capita)", "GDP per Capita",
-                             # "Kg of Apples Produced per Capita"))
+  ylab("Estimate")+
+  ggtitle("Influence on Variation in Cancer Deaths")+
+  scale_x_discrete(labels = c("Calories from Animal Protein", "Calories from Carbohydrates", 
+                            "Calories from Fat", "Calories from Plant Protein", 
+                              "Fruit consumed (kg/Per Capita)",
+                             "Kg of Apples Produced per Capita"))
 
-df2 %>% 
-  ggplot(aes(x = cal_frm_plnt_prot, y = deaths_neoplasms))+
-  geom_point()
 ```
 
 
 
-That's really interesting. In our previous analysis, apple production is correlated with longer life expectancy, but here it seems to be correlated with higher numbers of cancer deaths.  I REALLY WANT TO DO MY ANALYSIS BY CONTINENT
+None of these factors seem to have a large impact on increasing cancer death rates in any given country. However, we have to factor in population sizes. The largest correlation estimate value is from production of apples at +0.00005, or 5 thousanths of a percent. What does this look like?
 
-It makes me wonder how life expectancy and cancer deaths are related:
 ```{r}
-names(df2)
-df2 %>% 
-  ggplot(aes(x = kg_apple_prod_capita_year, y = deaths_neoplasms))+
-  geom_point()
+df %>% 
+  ggplot(aes(x = kg_apple_prod_capita_year, y = cancer_deaths_pc, color = continent))+
+  geom_point()+
+  xlab("Kg of Apples Produced per Capita")+
+  ylab("Cancer Death Rate")+
+  ggtitle("Apple Production and Cancer Death Rate")
+
+
 ```
 
+
+
+This is really confusing because apple production is correlated with longer life expectancy earlier in the report! First I will run a more in depth analysis of my two variables, factoring in country, to determine if we are actually seeing a pattern. 
+```{r}
+mod12 <- lmer(formula = cancer_deaths_pc~ kg_apple_prod_capita_year + (1|entity), 
+              data = df)
+print(summary(mod12))
+
+```
+
+
+According to our model, production of apples has a minor positive correlation with cancer death rate. Here are 5 randomly selected countries to allow us to get an idea of what this positive correlation might look like.
+
+```{r}
+sample <- sample(df$entity,5)
+       df %>% 
+  filter(entity %in% sample) %>% 
+  ggplot(aes(x = kg_apple_prod_capita_year, y= cancer_deaths_pc, color = entity))+
+  geom_point()+
+  facet_wrap(~entity)+
+         xlab("Kg of Apple Production")+ 
+       ylab("Cancer Death Rate")+
+         ggtitle("Close-up View of Apple Production and Cancer Death Rate")
+
+```
+
+
+As far as cancer deaths go, apple production, although having the largest estimated impact on variation in cancer death rates, still has a minimal effect. It's estimate was 0.000002. If any given country had a population of 1 million people, if 1 more kg of apples produced, we may expect to see 2 more deaths from cancer. Again, Correlation does not equal causation!
+
+
+
+
+
+In conclusion, I don't know enough about statistics to really shake a stick at anything. 

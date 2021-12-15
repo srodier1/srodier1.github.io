@@ -1,0 +1,9 @@
+library(dplyr)
+library(tidyverse)
+library(tidyselect)
+setwd("../Data_Course_RODIER")
+merge <- read_csv("final_project/merged_data.csv")
+
+this_is_a_really_long_name
+
+diamonds

@@ -1,0 +1,78 @@
+what if instead of the animal thing, I investigate the claim "an apple a day keeps the doctor away"
+I have data of global vegetable consumption by country, as well as other stats from a site called "our world in data"
+
+I wonder if I can construct a semi-accurate model of how well fruit/vegetable intake predicts health.
+(I have several measures of "keeping the doctor away"). 
+	-life expectancy
+	-DALY = 1 year taken away from healthy living per 100,000 residents, which I can convert to 'per capita' with mathmatical magic and the total populations
+	over time for all countries. 
+	-mental health can be another predictor of keeping the doctor away: happiness across countries studies, suicide, mental illness. 
+
+Here's my plan:
+
+select 3 countries from each populated continent. 
+BUT I want to include, the US and China for sure.
+I'm using a random country generator by continent from https://www.gigacalculator.com/randomizers/random-country-generator.php 
+
+NORTH AMERICA
+3 countries 
+
+Central America
+
+
+1. measure fruit consumption (per capita) by country against:
+	life expectancy
+	disease prevalence
+	DALY score
+	mental health
+	happiness
+2. vegetable consumption against 
+	life expectancy
+	disease prevalence
+	DALY score
+	mental health
+	happiness
+3. find some combination of the above data
+
+4. maybe find what other variables predict health/happiness of a country
+	proportion of females to males born to several different countries of the world
+	females in management
+	median wage against GDP 
+	
+5. How much of a countries happiness/health does vegetable/fruit consumption explain?
+
+Data sets I have per country over time:
+proportion of women in senior and middle management 
+depression vs self reported life satisfaction
+gdp vs happiness 
+sex ratio at birth
+share population female
+vegetable consumption per capita
+average per capita fruit intake vs minimum requirements
+fruit consumption by fruit type
+fruit consumption per capita
+dalys rate from all causes
+life expectancy
+population density. 
+
+ALL of these data sets come from 
+https://ourworldindata.org/ 
+in the 
+'articles by topic' tab by the search bar at the top. 
+
+I like this idea because the data is clean, I have more of it, which allows me more flexibility,
+and I am more confident in the accuracy of this data, since Our World in Data seems
+much more reputable to me then the data on mammals that I found on Kaggle. 
+
+Things I anticipate having difficulty with/that I need to learn how to do:
+learn how to combine data sets
+OR make graphs from different data sets
+
+interpret the data that I do have and that I can generate so that I don't make bad assumptions
+
+
+
+
+
+
+
